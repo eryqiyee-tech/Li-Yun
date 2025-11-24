@@ -1,0 +1,763 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Zap, 
+  Cpu, 
+  Wifi, 
+  ChevronRight, 
+  ArrowLeft, 
+  CheckCircle, 
+  XCircle, 
+  Leaf, 
+  BatteryCharging,
+  Info,
+  X,
+  Server,
+  RefreshCw,
+  BookOpen,
+  Download,
+  User,
+  LogOut
+} from 'lucide-react';
+
+// --- DATA: DATABASE MATERI & BANK SOAL ---
+// Struktur: Modul -> Array of Topics -> Content + Quiz Pool
+const MODULE_DATABASE = {
+  1: { // ID Modul: Termodinamika Digital
+    topics: [
+      {
+        id: 't1_a',
+        title: "Panas & Data Center",
+        physicsConcept: "Hukum Kekekalan Energi",
+        content: `
+          Setiap kali kamu mengirim email atau menyimpan foto di cloud, data tersebut masuk ke Data Center. Di sana, ribuan server bekerja tanpa henti.
+          
+          Energi listrik yang masuk ke server tidak hilang, melainkan berubah menjadi Energi Panas (Kalor). Sesuai Hukum Termodinamika II, kalor mengalir dari suhu tinggi ke rendah.
+          
+          Masalahnya, komponen elektronik akan rusak jika terlalu panas. Maka, dibutuhkan AC raksasa untuk membuang kalor ini. AC ini memakan energi listrik yang sangat besar, seringkali berasal dari pembakaran bahan bakar fosil.
+        `,
+        tips: "Hapus email lama. Lebih sedikit data = lebih sedikit server yang bekerja = lebih sedikit panas.",
+        quizPool: [
+          { q: "Energi listrik pada server berubah menjadi energi apa?", opts: ["Gerak", "Panas (Kalor)", "Kimia", "Pegas"], a: 1 },
+          { q: "Hukum fisika apa yang menyatakan energi tidak dapat dimusnahkan?", opts: ["Hukum Newton", "Kekekalan Energi", "Hukum Ohm", "Hukum Pascal"], a: 1 },
+          { q: "Apa fungsi utama pendingin di Data Center?", opts: ["Agar internet cepat", "Membuang Kalor", "Agar server estetik", "Mencegah virus"], a: 1 },
+          { q: "Semakin banyak data disimpan, maka konsumsi energi akan...", opts: ["Menurun", "Tetap", "Meningkat", "Menjadi nol"], a: 2 },
+          { q: "Komponen apa yang bertugas mendinginkan server?", opts: ["CPU", "RAM", "Sistem Pendingin (AC)", "Harddisk"], a: 2 },
+          { q: "Mengapa server menghasilkan panas?", opts: ["Karena hambatan listrik", "Karena gesekan udara", "Karena reaksi kimia", "Karena magnet"], a: 0 },
+          { q: "Tindakan digital apa yang mengurangi panas server?", opts: ["Menghapus Spam", "Download Film", "Streaming 4K", "Upload Foto"], a: 0 }
+        ]
+      },
+      {
+        id: 't1_b',
+        title: "Entropi & Sampah Digital",
+        physicsConcept: "Entropi (Ketidakteraturan)",
+        content: `
+          Dalam fisika, Entropi adalah ukuran ketidakteraturan sistem. Menyimpan ribuan file yang tidak terorganisir (sampah digital) meningkatkan 'kekacauan' dalam manajemen data.
+          
+          Server membutuhkan daya komputasi (usaha) lebih besar untuk mengindeks dan merawat data yang berantakan ini. Usaha (Work) yang dilakukan prosesor membutuhkan energi listrik.
+          
+          Membiarkan sampah digital menumpuk sama dengan membiarkan sistem bekerja tidak efisien, yang berujung pada pemborosan energi termal.
+        `,
+        tips: "Organisir filemu. Hapus duplikat. Kurangi entropi digitalmu.",
+        quizPool: [
+          { q: "Dalam fisika, ukuran ketidakteraturan sistem disebut...", opts: ["Entalpi", "Entropi", "Energi", "Emisi"], a: 1 },
+          { q: "Data yang berantakan menyebabkan prosesor bekerja...", opts: ["Lebih ringan", "Lebih keras/berat", "Sama saja", "Otomatis mati"], a: 1 },
+          { q: "Usaha (Work) pada komputer membutuhkan...", opts: ["Energi Listrik", "Energi Angin", "Energi Surya", "Energi Otot"], a: 0 },
+          { q: "Menghapus file duplikat bertujuan untuk...", opts: ["Mempercantik layar", "Efisiensi penyimpanan & energi", "Menghapus virus", "Merusak HP"], a: 1 },
+          { q: "Manajemen data yang buruk meningkatkan jejak...", opts: ["Air", "Karbon", "Tanah", "Udara"], a: 1 },
+          { q: "Apa dampak menumpuknya sampah digital?", opts: ["HP jadi baru", "Server bekerja ekstra", "Internet gratis", "Baterai awet"], a: 1 }
+        ]
+      }
+    ]
+  },
+  2: { // Optik
+    topics: [
+      {
+        id: 't2_a',
+        title: "OLED vs LCD: Hitam Sejati",
+        physicsConcept: "Emisi Cahaya & Arus Listrik",
+        content: `
+          Pada layar LCD, ada satu lampu latar (backlight) yang terus menyala, bahkan saat menampilkan warna hitam. Ini boros energi.
+          
+          Layar OLED berbeda. Setiap piksel adalah dioda yang memancarkan cahaya sendiri. Saat menampilkan warna hitam, piksel benar-benar MATI (Arus listrik = 0).
+          
+          Menggunakan wallpaper hitam pekat (True Black) pada layar OLED dapat menghemat baterai hingga 30% dibandingkan wallpaper putih terang.
+        `,
+        tips: "Gunakan 'Dark Mode' dan wallpaper hitam pekat (AMOLED Black).",
+        quizPool: [
+          { q: "Pada layar OLED, apa yang terjadi saat menampilkan warna hitam?", opts: ["Piksel redup", "Piksel mati (Off)", "Piksel putih", "Backlight menyala"], a: 1 },
+          { q: "Layar jenis apa yang butuh backlight terus menerus?", opts: ["OLED", "AMOLED", "LCD", "Plasma"], a: 2 },
+          { q: "Berapa arus listrik pada piksel OLED yang mati?", opts: ["Maksimal", "Nol / Mendekati Nol", "Setengah", "Tidak stabil"], a: 1 },
+          { q: "Fitur apa yang memanfaatkan prinsip kerja OLED untuk hemat energi?", opts: ["Airplane Mode", "Dark Mode", "Vibrate Mode", "Silent Mode"], a: 1 },
+          { q: "Warna apa yang paling boros energi pada layar?", opts: ["Hitam", "Putih", "Merah", "Hijau"], a: 1 },
+          { q: "OLED singkatan dari...", opts: ["Organic Light Emitting Diode", "Old Light Energy Device", "Open Loop Electric Data", "Over Load Energy"], a: 0 }
+        ]
+      },
+      {
+        id: 't2_b',
+        title: "Spektrum Cahaya Biru",
+        physicsConcept: "Panjang Gelombang & Energi Foton",
+        content: `
+          Cahaya tampak terdiri dari berbagai warna. Cahaya Biru memiliki panjang gelombang pendek (sekitar 450nm) namun memiliki Energi Foton yang paling tinggi dibanding warna lain (E = h.f).
+          
+          Memancarkan cahaya biru terus menerus membutuhkan energi tinggi dan juga dapat mengganggu ritme sirkadian (tidur) manusia.
+          
+          Fitur 'Night Light' atau 'Eye Comfort' mengurangi emisi piksel biru, menggantinya dengan warna hangat (merah/kuning) yang lebih rendah energinya.
+        `,
+        tips: "Aktifkan filter cahaya biru di malam hari.",
+        quizPool: [
+          { q: "Warna cahaya apa yang memiliki energi foton tertinggi di spektrum tampak?", opts: ["Merah", "Kuning", "Hijau", "Biru/Ungu"], a: 3 },
+          { q: "Rumus energi foton adalah...", opts: ["E = mc^2", "E = h.f", "F = m.a", "V = I.R"], a: 1 },
+          { q: "Fitur 'Night Light' mengurangi emisi warna...", opts: ["Merah", "Hitam", "Biru", "Putih"], a: 2 },
+          { q: "Mengapa cahaya biru lebih menguras energi?", opts: ["Frekuensinya rendah", "Frekuensinya tinggi", "Amplitudonya nol", "Gelombangnya lambat"], a: 1 },
+          { q: "Panjang gelombang cahaya biru sekitar...", opts: ["700 nm", "450 nm", "1 meter", "1 km"], a: 1 },
+          { q: "Selain baterai, cahaya biru mempengaruhi...", opts: ["Sinyal", "Kesehatan Mata/Tidur", "Kecepatan Prosesor", "Suhu HP"], a: 1 }
+        ]
+      }
+    ]
+  },
+  3: { // Gelombang
+    topics: [
+      {
+        id: 't3_a',
+        title: "Inverse Square Law",
+        physicsConcept: "Intensitas Gelombang",
+        content: `
+          Sinyal Wi-Fi atau Seluler adalah gelombang elektromagnetik. Kekuatan sinyal tunduk pada 'Inverse Square Law'.
+          
+          Jika kamu menjauh 2x lipat dari router Wi-Fi, kekuatan sinyal bukan turun setengah, tapi menjadi 1/4 kalinya.
+          
+          Akibatnya, HP-mu harus 'berteriak' (memancarkan daya lebih tinggi) agar sinyalnya sampai kembali ke router. Ini menguras baterai dengan sangat cepat.
+        `,
+        tips: "Mendekatlah ke sumber Wi-Fi untuk menghemat baterai HP.",
+        quizPool: [
+          { q: "Jika jarak ke router menjadi 2x lipat, sinyal menjadi...", opts: ["1/2 kali", "1/4 kali", "1/8 kali", "Tetap"], a: 1 },
+          { q: "Hukum fisika yang mengatur penurunan kekuatan sinyal adalah...", opts: ["Hukum Ohm", "Inverse Square Law", "Hukum Kirchoff", "Hukum Snellius"], a: 1 },
+          { q: "Apa yang dilakukan HP jika sinyal lemah?", opts: ["Menurunkan daya", "Meningkatkan daya pancar", "Mematikan layar", "Menghapus aplikasi"], a: 1 },
+          { q: "Sinyal Wi-Fi termasuk gelombang...", opts: ["Mekanik", "Suara", "Elektromagnetik", "Air"], a: 2 },
+          { q: "Mendekat ke router membuat baterai lebih...", opts: ["Boros", "Hemat", "Panas", "Rusak"], a: 1 }
+        ]
+      },
+      {
+        id: 't3_b',
+        title: "Kabel vs Nirkabel",
+        physicsConcept: "Transmisi & Hambatan",
+        content: `
+          Transmisi data via udara (Wireless) selalu lebih boros energi dibanding kabel (Wired).
+          
+          Pada transmisi nirkabel, energi disebar ke segala arah (omnidirectional), banyak yang terbuang sia-sia ke udara.
+          
+          Sedangkan pada kabel serat optik, cahaya dipandu menggunakan prinsip 'Pemantulan Sempurna' (Total Internal Reflection), sehingga energi terfokus dan sangat sedikit yang hilang.
+        `,
+        tips: "Gunakan kabel LAN untuk PC/Laptop jika memungkinkan.",
+        quizPool: [
+          { q: "Transmisi data paling hemat energi adalah...", opts: ["4G LTE", "Wi-Fi", "Kabel Fiber/LAN", "Satelit"], a: 2 },
+          { q: "Mengapa nirkabel lebih boros?", opts: ["Energi terfokus", "Energi menyebar ke segala arah", "Kabel mahal", "Udara menghambat"], a: 1 },
+          { q: "Prinsip fisika pada kabel serat optik adalah...", opts: ["Pembiasan", "Pemantulan Sempurna", "Difraksi", "Interferensi"], a: 1 },
+          { q: "Ke mana sisa energi sinyal Wi-Fi yang tidak tertangkap HP?", opts: ["Kembali ke router", "Terbuang ke lingkungan", "Masuk ke tanah", "Menjadi listrik"], a: 1 },
+          { q: "Fiber optik menggunakan media...", opts: ["Tembaga", "Cahaya", "Suara", "Air"], a: 1 }
+        ]
+      }
+    ]
+  },
+  4: { // Baterai
+     topics: [
+       {
+         id: 't4_a',
+         title: "Siklus Ion Lithium",
+         physicsConcept: "Elektrokimia",
+         content: `
+           Baterai Li-ion bekerja dengan memindahkan ion Lithium dari katoda ke anoda.
+           
+           Setiap kali kamu mengecas penuh (100%) dan menghabiskannya (0%), satu 'Siklus' tercatat. Material kimia di dalamnya perlahan mengalami degradasi (rusak).
+           
+           Menjaga baterai di antara 20% - 80% mengurangi stres kimiawi pada ion, sehingga baterai bisa bertahan bertahun-tahun lebih lama.
+         `,
+         tips: "Jangan biasakan baterai sampai 0%. Charge saat 20%, cabut saat 80%.",
+         quizPool: [
+           { q: "Partikel apa yang berpindah dalam baterai HP?", opts: ["Elektron bebas", "Ion Lithium", "Proton", "Neutron"], a: 1 },
+           { q: "Apa yang terjadi pada kimia baterai seiring waktu?", opts: ["Regenerasi", "Degradasi (Penurunan)", "Evolusi", "Mutasi"], a: 1 },
+           { q: "Rentang persentase baterai yang ideal adalah...", opts: ["0-100%", "20-80%", "50-100%", "0-10%"], a: 1 },
+           { q: "Proses pengisian daya mengubah energi listrik menjadi...", opts: ["Gerak", "Kimia", "Cahaya", "Bunyi"], a: 1 },
+           { q: "Istilah untuk satu kali cas penuh dan habis adalah...", opts: ["Siklus (Cycle)", "Periode", "Frekuensi", "Amplitudo"], a: 0 }
+         ]
+       }
+     ]
+  },
+  5: { // Semikonduktor
+    topics: [
+      {
+        id: 't5_a',
+        title: "Nanoteknologi Chip",
+        physicsConcept: "Resistansi Listrik",
+        content: `
+          Chip prosesor modern memiliki transistor berukuran 3-5 nanometer. Semakin kecil ukuran transistor, elektron menempuh jarak lebih pendek.
+          
+          Jarak pendek berarti hambatan (Resistansi) lebih kecil. Resistansi kecil berarti lebih sedikit panas yang dihasilkan dan lebih sedikit daya baterai yang dibutuhkan.
+          
+          Itulah mengapa HP baru biasanya lebih hemat baterai daripada HP jadul, meskipun performanya lebih cepat.
+        `,
+        tips: "Rawat gadgetmu. Membuat chip 3nm membutuhkan energi pabrik yang luar biasa besar.",
+        quizPool: [
+          { q: "Satuan ukuran transistor modern adalah...", opts: ["Milimeter", "Micrometer", "Nanometer", "Kilometer"], a: 2 },
+          { q: "Jika jarak tempuh elektron makin pendek, hambatan akan...", opts: ["Meningkat", "Menurun", "Tetap", "Hilang"], a: 1 },
+          { q: "Apa keuntungan chip berukuran kecil?", opts: ["Lebih panas", "Lebih boros", "Lebih cepat & hemat energi", "Lebih berat"], a: 2 },
+          { q: "Komponen utama dalam prosesor adalah...", opts: ["Transistor", "Resistor", "Kapasitor", "Induktor"], a: 0 },
+          { q: "Hambatan listrik menghasilkan energi buangan berupa...", opts: ["Cahaya", "Panas", "Suara", "Getaran"], a: 1 }
+        ]
+      }
+    ]
+  }
+};
+
+const DigiGreenHabit = () => {
+  const [activeTab, setActiveTab] = useState('splash');
+  const [currentModuleData, setCurrentModuleData] = useState(null);
+  const [completedModules, setCompletedModules] = useState([]);
+  const [showAbout, setShowAbout] = useState(false);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState(null);
+  
+  // USERNAME STATE
+  const [username, setUsername] = useState('');
+  const [tempUsername, setTempUsername] = useState('');
+
+  // --- Logic Install PWA ---
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    
+    // Check local storage for username
+    const savedName = localStorage.getItem('digigreen_user');
+    if (savedName) {
+      setUsername(savedName);
+    }
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      installPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted install');
+        }
+        setInstallPrompt(null);
+      });
+    } else {
+      setShowInstallGuide(true);
+    }
+  };
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (tempUsername.trim()) {
+      setUsername(tempUsername);
+      localStorage.setItem('digigreen_user', tempUsername);
+      setActiveTab('home');
+    }
+  };
+
+  const handleLogout = () => {
+    setUsername('');
+    setTempUsername('');
+    localStorage.removeItem('digigreen_user');
+    setActiveTab('login');
+  };
+
+  const mainCategories = [
+    { id: 1, title: "Termodinamika Digital", icon: <Server size={32} />, color: "text-cyan-400" },
+    { id: 2, title: "Optik & Layar", icon: <Zap size={32} />, color: "text-yellow-400" },
+    { id: 3, title: "Gelombang & Sinyal", icon: <Wifi size={32} />, color: "text-purple-400" },
+    { id: 4, title: "Baterai & E-Waste", icon: <BatteryCharging size={32} />, color: "text-green-400" },
+    { id: 5, title: "Semikonduktor", icon: <Cpu size={32} />, color: "text-blue-500" }
+  ];
+
+  // --- LOGIC: RANDOMIZER ENGINE ---
+  const loadRandomContent = (moduleId) => {
+    const moduleData = MODULE_DATABASE[moduleId];
+    const randomTopicIndex = Math.floor(Math.random() * moduleData.topics.length);
+    const selectedTopic = moduleData.topics[randomTopicIndex];
+    const shuffledQuiz = [...selectedTopic.quizPool]
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 5);
+
+    setCurrentModuleData({
+      moduleId: moduleId,
+      mainTitle: mainCategories.find(c => c.id === moduleId).title,
+      mainIcon: mainCategories.find(c => c.id === moduleId).icon,
+      mainColor: mainCategories.find(c => c.id === moduleId).color,
+      topicTitle: selectedTopic.title,
+      concept: selectedTopic.physicsConcept,
+      content: selectedTopic.content,
+      tips: selectedTopic.tips,
+      quiz: shuffledQuiz.map((q, index) => ({
+        id: index,
+        question: q.q,
+        options: q.opts,
+        correct: q.a
+      }))
+    });
+  };
+
+  const handleModuleClick = (moduleId) => {
+    loadRandomContent(moduleId);
+    setActiveTab('moduleDetail');
+  };
+
+  // --- Loading Screen ---
+  useEffect(() => {
+    if (activeTab === 'splash') {
+      const timer = setTimeout(() => {
+        // If username exists, go to home, else login
+        if (localStorage.getItem('digigreen_user')) {
+          setActiveTab('home');
+        } else {
+          setActiveTab('login');
+        }
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab]);
+
+  // --- Components ---
+
+  const SplashScreen = () => (
+    <div className="flex flex-col items-center justify-center h-screen bg-slate-950 text-green-400 font-mono relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-green-900/20 via-slate-950 to-slate-950"></div>
+      <div className="relative">
+        <div className="w-32 h-32 border-4 border-green-500/30 rounded-full animate-ping absolute"></div>
+        <div className="w-32 h-32 border-t-4 border-green-400 rounded-full animate-spin"></div>
+        <Leaf className="absolute top-10 left-10 text-white animate-pulse" size={48} />
+      </div>
+      <h1 className="mt-8 text-3xl font-bold tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400 animate-pulse">
+        DIGIGREEN
+      </h1>
+      <p className="text-cyan-200/70 text-sm tracking-widest mt-2">LOADING SYSTEM...</p>
+    </div>
+  );
+
+  const LoginScreen = () => (
+    <div className="flex flex-col items-center justify-center h-screen bg-slate-950 p-6 relative">
+       {/* Decor */}
+       <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+       <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
+
+       <div className="w-full max-w-sm z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+         <div className="text-center mb-10">
+            <div className="w-20 h-20 bg-slate-900 border border-green-500/50 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+               <User size={40} className="text-green-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-white tracking-wider">IDENTIFIKASI AGEN</h2>
+            <p className="text-slate-400 text-sm mt-2">Masukkan kode nama untuk memulai misi.</p>
+         </div>
+
+         <form onSubmit={handleLogin} className="space-y-6">
+            <div className="relative group">
+              <input 
+                type="text" 
+                autoFocus
+                value={tempUsername}
+                onChange={(e) => setTempUsername(e.target.value)}
+                placeholder="Nama Agen..."
+                className="w-full bg-slate-900/50 border border-slate-700 text-white px-6 py-4 rounded-xl focus:outline-none focus:border-green-500 transition-colors placeholder:text-slate-600 text-center text-lg tracking-widest uppercase font-semibold"
+                required
+              />
+              <div className="absolute inset-0 rounded-xl border border-green-500/0 group-focus-within:border-green-500/50 group-focus-within:shadow-[0_0_15px_rgba(34,197,94,0.2)] pointer-events-none transition-all duration-300"></div>
+            </div>
+            
+            <button 
+              type="submit"
+              className="w-full bg-gradient-to-r from-green-600 to-cyan-600 hover:from-green-500 hover:to-cyan-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-900/50 transition-all active:scale-95 flex items-center justify-center gap-2 uppercase tracking-wide"
+            >
+              Akses Diterima <ChevronRight size={20} />
+            </button>
+         </form>
+       </div>
+    </div>
+  );
+
+  const InstallGuideModal = () => (
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl p-6 relative animate-in slide-in-from-bottom-4">
+        <button onClick={() => setShowInstallGuide(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+          <X size={24} />
+        </button>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-cyan-500/20 rounded-full flex items-center justify-center">
+            <Download size={20} className="text-cyan-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Install App</h2>
+        </div>
+        <p className="text-slate-300 text-sm leading-relaxed mb-4">
+          Agar aplikasi ini muncul di menu HP seperti aplikasi biasa (Web APK):
+        </p>
+        <div className="space-y-3 text-sm text-slate-400 mb-6 bg-slate-950 p-4 rounded-xl border border-slate-800">
+          <div className="flex items-start gap-3">
+             <span className="font-bold text-white bg-slate-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
+             <p>Buka menu browser (ikon titik tiga atau tombol Share).</p>
+          </div>
+          <div className="flex items-start gap-3">
+             <span className="font-bold text-white bg-slate-800 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
+             <p>Pilih menu <strong>"Add to Home Screen"</strong> atau <strong>"Install App"</strong>.</p>
+          </div>
+        </div>
+        <button onClick={() => setShowInstallGuide(false)} className="w-full bg-cyan-600 text-white py-3 rounded-xl font-semibold hover:bg-cyan-500">
+          Siap, Laksanakan!
+        </button>
+      </div>
+    </div>
+  );
+
+  const AboutModal = () => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl p-6 relative">
+        <button onClick={() => setShowAbout(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+          <X size={24} />
+        </button>
+        <h2 className="text-xl font-bold text-white mb-2">Tentang Aplikasi</h2>
+        <p className="text-slate-300 text-sm leading-relaxed mb-4">
+          <strong className="text-green-400">DigiGreen Habit</strong> menggunakan sistem 
+          <em> Dynamic Content</em>.
+        </p>
+        <div className="bg-slate-800/50 p-3 rounded-lg mb-4">
+           <p className="text-xs text-slate-300">Logged in as:</p>
+           <p className="text-green-400 font-bold font-mono text-lg">{username}</p>
+        </div>
+        <button 
+           onClick={() => {
+             handleLogout();
+             setShowAbout(false);
+           }} 
+           className="w-full bg-red-500/10 border border-red-500/30 text-red-400 py-3 rounded-xl font-semibold hover:bg-red-500/20 flex items-center justify-center gap-2 mb-2"
+        >
+          <LogOut size={16} /> Logout / Ganti Nama
+        </button>
+        <button onClick={() => setShowAbout(false)} className="w-full bg-slate-800 text-white py-3 rounded-xl font-semibold hover:bg-slate-700">
+          Tutup
+        </button>
+      </div>
+    </div>
+  );
+
+  const Home = () => (
+    <div className="min-h-screen bg-slate-950 text-white font-sans p-6 pb-24 relative overflow-x-hidden">
+      {showAbout && <AboutModal />}
+      {showInstallGuide && <InstallGuideModal />}
+      
+      <header className="flex justify-between items-center mb-8 pt-6">
+        <div>
+           <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <p className="text-xs text-green-400 font-mono tracking-widest uppercase">Agent Active</p>
+           </div>
+          <h1 className="text-2xl font-bold text-white">
+            Halo, <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-500">{username || 'Agent'}</span>
+          </h1>
+          <p className="text-xs text-slate-400">Siap untuk misi literasi digital?</p>
+        </div>
+        <div className="flex gap-2">
+          {/* Tombol Install PWA */}
+          <button 
+            onClick={handleInstallClick}
+            className="w-10 h-10 rounded-full bg-cyan-500/20 border border-cyan-500/50 flex items-center justify-center active:scale-95 transition-transform text-cyan-400"
+            title="Install App"
+          >
+            <Download size={20} />
+          </button>
+          
+          <button 
+            onClick={() => setShowAbout(true)}
+            className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center active:scale-95 transition-transform"
+          >
+            <User size={20} className="text-slate-400" />
+          </button>
+        </div>
+      </header>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="bg-slate-900/50 backdrop-blur-md p-4 rounded-2xl border border-slate-800">
+          <p className="text-slate-400 text-xs mb-1">Status Misi</p>
+          <div className="flex items-end gap-2">
+            <span className="text-2xl font-bold text-green-400">
+              {Math.round((completedModules.length / mainCategories.length) * 100)}%
+            </span>
+            <BatteryCharging size={18} className="text-green-500 mb-1" />
+          </div>
+          <div className="w-full bg-slate-800 h-1 mt-2 rounded-full">
+            <div 
+              className="bg-green-500 h-1 rounded-full transition-all duration-500" 
+              style={{ width: `${(completedModules.length / mainCategories.length) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+        <div className="bg-slate-900/50 backdrop-blur-md p-4 rounded-2xl border border-slate-800">
+          <p className="text-slate-400 text-xs mb-1">Modul Tuntas</p>
+          <div className="flex items-end gap-2">
+            <span className="text-2xl font-bold text-cyan-400">{completedModules.length}</span>
+            <span className="text-sm text-slate-500 mb-1">/ {mainCategories.length}</span>
+          </div>
+        </div>
+      </div>
+
+      <h2 className="text-lg font-semibold mb-4 text-slate-200">Pilih Modul Pembelajaran</h2>
+      <div className="space-y-4 pb-12">
+        {mainCategories.map((cat) => {
+          const isCompleted = completedModules.includes(cat.id);
+          return (
+            <div 
+              key={cat.id}
+              onClick={() => handleModuleClick(cat.id)}
+              className={`group border p-5 rounded-2xl flex items-center gap-4 cursor-pointer transition-all duration-300 active:scale-95 touch-manipulation
+                ${isCompleted 
+                  ? 'bg-slate-900/80 border-green-500/50' 
+                  : 'bg-slate-900 border-slate-800 hover:border-slate-600'
+                }
+              `}
+            >
+              <div className={`w-12 h-12 rounded-xl bg-slate-950 flex items-center justify-center border border-white/10 ${cat.color} shadow-lg relative`}>
+                {cat.icon}
+                {isCompleted && (
+                  <div className="absolute -top-1 -right-1 bg-slate-950 rounded-full border border-green-500">
+                    <CheckCircle size={14} className="text-green-500 fill-green-500/20" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className={`font-semibold ${isCompleted ? 'text-green-400' : 'text-slate-100'}`}>
+                  {cat.title}
+                </h3>
+                <p className="text-xs text-slate-400">Klik untuk muat materi acak</p>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-cyan-500 group-hover:text-black">
+                <RefreshCw size={16} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const ModuleDetail = () => {
+    const [viewState, setViewState] = useState('content'); // 'content', 'quiz', 'result'
+    const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+    const [selectedOption, setSelectedOption] = useState(null);
+    const [score, setScore] = useState(0);
+    const [showFeedback, setShowFeedback] = useState(false);
+
+    if (!currentModuleData) return null;
+
+    const currentQuiz = currentModuleData.quiz[currentQuestionIdx];
+
+    const handleOptionClick = (idx) => {
+      if (showFeedback) return;
+      setSelectedOption(idx);
+      setShowFeedback(true);
+      if (idx === currentQuiz.correct) setScore(prev => prev + 1);
+    };
+
+    const handleNextQuestion = () => {
+      if (currentQuestionIdx < currentModuleData.quiz.length - 1) {
+        setCurrentQuestionIdx(prev => prev + 1);
+        setSelectedOption(null);
+        setShowFeedback(false);
+      } else {
+        finishQuiz();
+      }
+    };
+
+    const finishQuiz = () => {
+      setViewState('result');
+      if (score >= 3) {
+         if (!completedModules.includes(currentModuleData.moduleId)) {
+            setCompletedModules(prev => [...prev, currentModuleData.moduleId]);
+         }
+      }
+    };
+
+    const handleRefreshContent = () => {
+      // Reload topik lain dalam modul yang sama
+      setViewState('content');
+      loadRandomContent(currentModuleData.moduleId);
+    };
+
+    return (
+      <div className="min-h-screen bg-slate-950 text-white font-sans flex flex-col relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+        
+        {/* Nav */}
+        <div className="p-6 pt-8 pb-2 flex items-center gap-4 z-10 sticky top-0 bg-slate-950/90 backdrop-blur-md border-b border-white/5">
+          <button 
+            onClick={() => setActiveTab('home')}
+            className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition-colors border border-slate-700"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div className="flex-1 overflow-hidden">
+             <h2 className="font-semibold text-sm text-slate-400 tracking-wide uppercase">{currentModuleData.mainTitle}</h2>
+             <h1 className="font-bold text-md truncate text-cyan-400 flex items-center gap-2">
+               <BookOpen size={14}/> {currentModuleData.topicTitle}
+             </h1>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 z-10 pb-20">
+          
+          {/* VIEW: CONTENT */}
+          {viewState === 'content' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex justify-between items-start mb-6">
+                <div className={`w-16 h-16 rounded-2xl bg-slate-900 border border-slate-700 flex items-center justify-center ${currentModuleData.mainColor} shadow-[0_0_30px_rgba(0,0,0,0.5)]`}>
+                  {currentModuleData.mainIcon}
+                </div>
+                <button 
+                  onClick={handleRefreshContent}
+                  className="px-3 py-2 bg-slate-800 rounded-lg text-xs text-slate-300 flex items-center gap-2 hover:bg-slate-700 border border-slate-700"
+                >
+                  <RefreshCw size={12} /> Ganti Topik
+                </button>
+              </div>
+              
+              <div className="inline-block px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-xs text-green-400 mb-4 font-mono">
+                KONSEP: {currentModuleData.concept.toUpperCase()}
+              </div>
+
+              <div className="space-y-6 text-slate-300 leading-relaxed text-sm md:text-base">
+                <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800">
+                   {currentModuleData.content.split('\n').map((para, i) => (
+                     <p key={i} className="mb-3 last:mb-0">{para}</p>
+                   ))}
+                </div>
+                
+                <div className="bg-gradient-to-r from-green-900/20 to-slate-900 p-5 rounded-xl border border-green-500/30 flex gap-4 items-start">
+                  <Leaf className="text-green-400 shrink-0 mt-1" size={24} />
+                  <div>
+                    <h4 className="text-green-400 font-bold text-sm mb-1 uppercase tracking-wider">Eco-Action</h4>
+                    <p className="text-sm">{currentModuleData.tips}</p>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => {
+                  setViewState('quiz');
+                  setCurrentQuestionIdx(0);
+                  setScore(0);
+                  setShowFeedback(false);
+                }}
+                className="w-full mt-8 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 py-4 rounded-xl font-bold text-white shadow-lg shadow-cyan-900/50 transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                <span>Mulai Kuis Acak (5 Soal)</span>
+                <Zap size={18} className="fill-current" />
+              </button>
+            </div>
+          )}
+
+          {/* VIEW: QUIZ */}
+          {viewState === 'quiz' && (
+            <div className="h-full flex flex-col justify-center animate-in fade-in zoom-in-95 duration-300">
+              <div className="mb-8">
+                <div className="flex justify-between text-slate-400 text-xs uppercase tracking-[0.2em] mb-2">
+                   <span>Soal {currentQuestionIdx + 1}/5</span>
+                   <span>Skor: {score}</span>
+                </div>
+                <h2 className="text-xl font-bold leading-snug">{currentQuiz.question}</h2>
+              </div>
+
+              <div className="space-y-3">
+                {currentQuiz.options.map((opt, idx) => {
+                   let btnClass = "bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800";
+                   if (showFeedback) {
+                     if (idx === currentQuiz.correct) btnClass = "bg-green-500/20 border-green-500 text-green-300";
+                     else if (idx === selectedOption) btnClass = "bg-red-500/20 border-red-500 text-red-300";
+                     else btnClass = "opacity-50 border-slate-800";
+                   }
+                   return (
+                    <button
+                      key={idx}
+                      disabled={showFeedback}
+                      onClick={() => handleOptionClick(idx)}
+                      className={`w-full p-4 rounded-xl text-left text-sm transition-all border flex justify-between items-center ${btnClass}`}
+                    >
+                      <span>{opt}</span>
+                      {showFeedback && idx === currentQuiz.correct && <CheckCircle size={18} />}
+                      {showFeedback && idx === selectedOption && idx !== currentQuiz.correct && <XCircle size={18} />}
+                    </button>
+                   );
+                })}
+              </div>
+
+              {showFeedback && (
+                <button 
+                  onClick={handleNextQuestion}
+                  className="mt-8 w-full bg-slate-100 text-slate-900 font-bold py-3 rounded-xl hover:bg-white animate-in slide-in-from-bottom-2 fade-in"
+                >
+                  {currentQuestionIdx === 4 ? "Lihat Hasil" : "Lanjut"}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* VIEW: RESULT */}
+          {viewState === 'result' && (
+             <div className="flex flex-col items-center justify-center h-full animate-in zoom-in-95 duration-500">
+                <div className="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center mb-6 relative">
+                   {score >= 3 ? (
+                      <CheckCircle size={48} className="text-green-500" />
+                   ) : (
+                      <Activity size={48} className="text-red-500" />
+                   )}
+                   <div className="absolute inset-0 border-4 border-slate-700 rounded-full"></div>
+                   <div 
+                      className={`absolute inset-0 border-4 rounded-full ${score >=3 ? 'border-green-500' : 'border-red-500'}`}
+                      style={{ clipPath: `inset(0 ${100 - (score/5)*100}% 0 0)` }}
+                   ></div>
+                </div>
+
+                <h2 className="text-3xl font-bold mb-2 text-white">
+                  {score >= 3 ? "Misi Sukses!" : "Perlu Perbaikan"}
+                </h2>
+                <p className="text-slate-400 mb-8 text-center max-w-xs">
+                  {score >= 3 
+                    ? `Kamu menjawab ${score}/5 benar. Bagus! Coba muat ulang materi untuk mendapatkan topik baru.`
+                    : `Skor ${score}/5. Jangan menyerah, baca materi lagi.`}
+                </p>
+
+                <div className="flex gap-3 w-full max-w-xs">
+                   <button 
+                     onClick={handleRefreshContent}
+                     className="flex-1 py-3 rounded-xl bg-slate-800 text-white font-semibold hover:bg-slate-700 flex flex-col items-center justify-center gap-1 text-xs"
+                   >
+                     <RefreshCw size={16}/>
+                     <span>Materi Baru</span>
+                   </button>
+                   <button 
+                     onClick={() => setActiveTab('home')}
+                     className={`flex-1 py-3 rounded-xl font-bold text-slate-900 flex items-center justify-center ${score >=3 ? 'bg-green-400 hover:bg-green-300' : 'bg-slate-200 hover:bg-white'}`}
+                   >
+                     Beranda
+                   </button>
+                </div>
+             </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {activeTab === 'splash' && <SplashScreen />}
+      {activeTab === 'login' && <LoginScreen />}
+      {activeTab === 'home' && <Home />}
+      {activeTab === 'moduleDetail' && <ModuleDetail />}
+    </>
+  );
+};
+
+export default DigiGreenHabit;
