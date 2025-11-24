@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigiGreen Habit</title>
+    
+    <!-- 1. LOAD LIBRARY -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- 2. KONFIGURASI -->
+    <script>
+        tailwind.config = { theme: { extend: { animation: { 'bounce-slow': 'bounce 3s infinite' } } } }
+    </script>
+    <style>
+        body { background-color: #020617; color: white; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- 3. LOGIKA APLIKASI -->
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- ICON PACK (Optimized) ---
+        const Icon = ({ children, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
+        const Icons = {
+            Leaf: (p) => <Icon {...p}><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 6.5-2 12a7 7 0 0 1-6 6Z"/><path d="M12 9.4a10 10 0 0 0-4 8"/></Icon>,
+            Zap: (p) => <Icon {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Icon>,
+            Cpu: (p) => <Icon {...p}><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 20v3"/><path d="M15 20v3"/><path d="M20 9h3"/><path d="M20 14h3"/><path d="M1 9h3"/><path d="M1 14h3"/></Icon>,
+            Wifi: (p) => <Icon {...p}><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></Icon>,
+            Server: (p) => <Icon {...p}><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></Icon>,
+            BatteryCharging: (p) => <Icon {...p}><path d="M15 7h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><path d="M6 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1"/><path d="M11 7l-3 5h4l-3 5"/><line x1="22" x2="22" y1="11" y2="13"/></Icon>,
+            ChevronRight: (p) => <Icon {...p}><path d="m9 18 6-6-6-6"/></Icon>,
+            ArrowLeft: (p) => <Icon {...p}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></Icon>,
+            CheckCircle: (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>,
+            XCircle: (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></Icon>,
+            User: (p) => <Icon {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>,
+            RefreshCw: (p) => <Icon {...p}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></Icon>,
+            BookOpen: (p) => <Icon {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>,
+            Download: (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></Icon>,
+            X: (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>
+        };
+
+        const MODULES = {
+            1: { id:'1', title:"Termodinamika Digital", icon:"Server", color:"text-cyan-400", desc:"Panas Server & Energi", content:"Server data center mengubah listrik menjadi panas (kalor). Butuh pendingin raksasa. Hapus email spam untuk hemat energi.", tips:"Hapus email lama.", quiz:[{q:"Listrik server berubah jadi...",o:["Gerak","Panas","Kimia","Cahaya"],a:1}] },
+            2: { id:'2', title:"Optik & Layar", icon:"Zap", color:"text-yellow-400", desc:"OLED vs LCD", content:"Layar OLED mematikan piksel saat warna hitam (Daya=0). LCD butuh lampu terus menerus. Pakai Dark Mode!", tips:"Aktifkan Dark Mode.", quiz:[{q:"Warna hemat di OLED...",o:["Putih","Biru","Hitam","Merah"],a:2}] },
+            3: { id:'3', title:"Gelombang Sinyal", icon:"Wifi", color:"text-purple-400", desc:"Inverse Square Law", content:"Sinyal melemah drastis jika menjauh. HP memancarkan daya tinggi jika sinyal lemah, boros baterai.", tips:"Dekati router Wi-Fi.", quiz:[{q:"Jika sinyal lemah, HP...",o:["Hemat","Mati","Boros Daya","Dingin"],a:2}] },
+            4: { id:'4', title:"Baterai Li-ion", icon:"BatteryCharging", color:"text-green-400", desc:"Elektrokimia", content:"Baterai bekerja via reaksi kimia. Jangan biarkan 0% atau 100% terus menerus agar awet.", tips:"Jaga di 20%-80%.", quiz:[{q:"Baterai menyimpan energi...",o:["Gerak","Kimia","Panas","Nuklir"],a:1}] },
+            5: { id:'5', title:"Semikonduktor", icon:"Cpu", color:"text-blue-500", desc:"Chip Nanometer", content:"Chip makin kecil (nanometer) agar hambatan listrik kecil. Hambatan kecil = tidak panas & hemat baterai.", tips:"Rawat gadgetmu.", quiz:[{q:"Satuan ukuran chip...",o:["Meter","Nanometer","Kilo","Mili"],a:1}] }
+        };
+
+        // --- APP COMPONENTS ---
+
+        const SplashScreen = ({ onFinish }) => {
+            useEffect(() => { setTimeout(onFinish, 2000); }, []);
+            return (
+                <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-green-400">
+                    <div className="animate-bounce mb-4"><Icons.Leaf size={64} className="text-white"/></div>
+                    <h1 className="text-3xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">DIGIGREEN</h1>
+                    <p className="text-xs mt-2 text-cyan-500 animate-pulse">LOADING SYSTEM...</p>
+                </div>
+            );
+        };
+
+        const LoginScreen = ({ onLogin }) => {
+            const [name, setName] = useState("");
+            return (
+                <div className="h-screen flex items-center justify-center bg-slate-950 p-6 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-cyan-900/20 via-slate-950 to-slate-950"></div>
+                    <div className="w-full max-w-sm z-10 text-center animate-[fadeIn_0.5s_ease-out]">
+                        <div className="w-24 h-24 bg-slate-900 border border-green-500/50 rounded-full mx-auto flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(34,197,94,0.2)]">
+                            <Icons.User size={48} className="text-green-400"/>
+                        </div>
+                        <h2 className="text-2xl font-bold text-white mb-2">IDENTITAS AGEN</h2>
+                        <p className="text-slate-400 text-sm mb-8">Masukkan nama sandi untuk akses data.</p>
+                        <form onSubmit={(e)=>{e.preventDefault(); if(name.trim()) onLogin(name);}} className="space-y-4">
+                            <input autoFocus type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="NAMA..." className="w-full bg-slate-900/80 border border-slate-700 text-white p-4 rounded-xl text-center font-bold focus:outline-none focus:border-green-500 uppercase tracking-widest" required/>
+                            <button type="submit" className="w-full bg-gradient-to-r from-green-600 to-cyan-600 text-white font-bold p-4 rounded-xl shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+                                AKSES MISI <Icons.ChevronRight size={20}/>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const ModuleView = ({ mod, onBack, onComplete }) => {
+            const [step, setStep] = useState(0); // 0:Materi, 1:Kuis, 2:Hasil
+            const [score, setScore] = useState(0);
+            const [ans, setAns] = useState(null);
+            
+            const Ico = Icons[mod.icon];
+            const q = mod.quiz[0]; // Simple 1 question for demo
+
+            const check = (i) => {
+                setAns(i);
+                if(i === q.a) setScore(1);
+            };
+
+            return (
+                <div className="h-screen bg-slate-950 text-white flex flex-col">
+                    <div className="p-4 flex items-center gap-4 border-b border-white/10 bg-slate-900/50 backdrop-blur">
+                        <button onClick={onBack} className="p-2 rounded-full bg-slate-800"><Icons.ArrowLeft size={20}/></button>
+                        <h1 className="font-bold truncate flex-1 text-green-400">{mod.title}</h1>
+                    </div>
+                    
+                    <div className="p-6 flex-1 overflow-y-auto">
+                        {step === 0 && (
+                            <div className="animate-[slideUp_0.3s_ease-out]">
+                                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 bg-slate-900 border border-slate-700 ${mod.color}`}><Ico size={32}/></div>
+                                <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 mb-6 text-sm leading-relaxed text-slate-300">{mod.content}</div>
+                                <div className="bg-green-500/10 p-4 rounded-xl border border-green-500/20 mb-8 flex gap-3">
+                                    <Icons.Leaf className="text-green-400 shrink-0" size={20}/>
+                                    <p className="text-xs text-green-200 font-medium">{mod.tips}</p>
+                                </div>
+                                <button onClick={()=>setStep(1)} className="w-full bg-blue-600 p-4 rounded-xl font-bold shadow-lg active:scale-95 transition-transform">Mulai Kuis</button>
+                            </div>
+                        )}
+
+                        {step === 1 && (
+                            <div className="animate-[fadeIn_0.3s]">
+                                <h2 className="text-lg font-bold mb-6">{q.q}</h2>
+                                <div className="space-y-3">
+                                    {q.o.map((opt,i)=>(
+                                        <button key={i} onClick={()=>check(i)} disabled={ans!==null} 
+                                            className={`w-full p-4 rounded-xl text-left text-sm border transition-all ${ans===null?'bg-slate-900 border-slate-700':i===q.a?'bg-green-500/20 border-green-500 text-green-400':ans===i?'bg-red-500/20 border-red-500 text-red-400':'opacity-30 bg-slate-900'}`}>
+                                            {opt}
+                                        </button>
+                                    ))}
+                                </div>
+                                {ans!==null && (
+                                    <button onClick={()=>{setStep(2); if(score>0) onComplete();}} className="w-full mt-8 bg-white text-slate-900 font-bold p-4 rounded-xl animate-[slideUp_0.2s]">Lihat Hasil</button>
+                                )}
+                            </div>
+                        )}
+
+                        {step === 2 && (
+                            <div className="text-center pt-10 animate-[zoomIn_0.3s]">
+                                <div className="w-24 h-24 rounded-full bg-slate-900 border-4 border-slate-800 flex items-center justify-center mx-auto mb-6">
+                                    {score>0 ? <Icons.CheckCircle size={48} className="text-green-500"/> : <Icons.XCircle size={48} className="text-red-500"/>}
+                                </div>
+                                <h2 className="text-2xl font-bold mb-2">{score>0?"Misi Sukses!":"Gagal"}</h2>
+                                <p className="text-slate-400 text-sm mb-8">{score>0 ? "Data tersimpan ke profil agen." : "Coba pelajari materi lagi."}</p>
+                                <button onClick={onBack} className="w-full bg-slate-800 border border-slate-700 p-4 rounded-xl font-bold">Kembali ke Markas</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [page, setPage] = useState('splash');
+            const [user, setUser] = useState('');
+            const [completed, setCompleted] = useState([]); // Array of ID strings
+            const [activeId, setActiveId] = useState(null);
+
+            // Cek Login Awal (Session)
+            useEffect(() => {
+                const lastUser = localStorage.getItem('digigreen_last_user');
+                if(page === 'splash') {
+                    setTimeout(() => {
+                        if(lastUser) login(lastUser, false); // false = jangan delay splash
+                        else setPage('login');
+                    }, 2000);
+                }
+            }, []);
+
+            const login = (name, redirect=true) => {
+                const cleanName = name.trim().toUpperCase();
+                setUser(cleanName);
+                localStorage.setItem('digigreen_last_user', cleanName);
+                
+                // LOAD DATA SPESIFIK USER INI
+                const userData = JSON.parse(localStorage.getItem('digigreen_data_' + cleanName) || '[]');
+                setCompleted(userData);
+                
+                if(redirect) setPage('home');
+                else setPage('home');
+            };
+
+            const logout = () => {
+                localStorage.removeItem('digigreen_last_user');
+                setUser('');
+                setCompleted([]);
+                setPage('login');
+            };
+
+            const finishModule = (id) => {
+                if(!completed.includes(id)) {
+                    const newData = [...completed, id];
+                    setCompleted(newData);
+                    // SIMPAN DATA SPESIFIK KE USER INI
+                    localStorage.setItem('digigreen_data_' + user, JSON.stringify(newData));
+                }
+            };
+
+            if(page==='splash') return <SplashScreen onFinish={()=>{}}/>;
+            if(page==='login') return <LoginScreen onLogin={login}/>;
+            if(page==='mod' && activeId) return <ModuleView mod={MODULES[activeId]} onBack={()=>setPage('home')} onComplete={()=>finishModule(activeId)}/>;
+
+            // HOME PAGE
+            const progress = Math.round((completed.length / 5) * 100);
+            
+            return (
+                <div className="min-h-screen bg-slate-950 text-white p-6 pb-24 font-sans">
+                    <div className="flex justify-between items-center mb-8 pt-4">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                <span className="text-[10px] text-green-400 font-mono tracking-widest">AGENT: {user}</span>
+                            </div>
+                            <h1 className="text-xl font-bold text-white">Markas Besar</h1>
+                        </div>
+                        <button onClick={logout} className="bg-slate-900 border border-slate-800 p-2 rounded-full text-slate-400 hover:text-red-400"><Icons.X size={20}/></button>
+                    </div>
+
+                    <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 mb-8 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+                        <div className="flex justify-between text-xs text-slate-400 mb-2 relative z-10">
+                            <span>Progress Misi</span>
+                            <span>{completed.length}/5 Selesai</span>
+                        </div>
+                        <div className="h-3 bg-slate-800 rounded-full overflow-hidden relative z-10">
+                            <div className="h-full bg-gradient-to-r from-green-500 to-cyan-500 transition-all duration-1000" style={{width: `${progress}%`}}></div>
+                        </div>
+                        <p className="text-right text-xs mt-2 text-green-400 font-mono">{progress}%</p>
+                    </div>
+
+                    <h2 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">Daftar Modul</h2>
+                    <div className="space-y-3">
+                        {Object.values(MODULES).map((m) => {
+                            const isDone = completed.includes(m.id);
+                            const Ico = Icons[m.icon];
+                            return (
+                                <div key={m.id} onClick={()=>{setActiveId(m.id); setPage('mod');}} 
+                                    className={`flex items-center gap-4 p-4 rounded-2xl border cursor-pointer active:scale-95 transition-all ${isDone ? 'bg-slate-900/80 border-green-500/40' : 'bg-slate-900 border-slate-800 hover:border-slate-700'}`}>
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${m.color} bg-slate-950 border border-white/5 relative`}>
+                                        <Ico size={24}/>
+                                        {isDone && <div className="absolute -top-1 -right-1 bg-slate-950 rounded-full p-[2px]"><Icons.CheckCircle size={14} className="text-green-500 fill-green-900"/></div>}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className={`font-bold ${isDone ? 'text-green-400' : 'text-white'}`}>{m.title}</h3>
+                                        <p className="text-xs text-slate-500 line-clamp-1">{m.desc}</p>
+                                    </div>
+                                    <div className="p-2 bg-slate-800 rounded-full text-slate-400"><Icons.ChevronRight size={16}/></div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
